@@ -66,7 +66,7 @@ VendorEnrichedDF = spark.sql("SELECT a.*, b.Vendor_Name "
                              "ON a.Vendor_ID = b.Vendor_ID")
 VendorEnrichedDF.createOrReplaceTempView('VendorEnrichedDF')
 
-usdEnrichedDF = spark.sql("SELECT * , ROUND((a.Sale_Amount/b.Exchange_Rate),2) as Sale_Amount_USD "
+usdEnrichedDF = spark.sql("SELECT a.* , ROUND((a.Sale_Amount/b.Exchange_Rate),2) as Sale_Amount_USD "
                           "FROM VendorEnrichedDF a INNER JOIN USDRateDF b "
                           "ON a.Sale_Currency = b.Currency_Code")
 
@@ -77,4 +77,20 @@ usdEnrichedDF.write.mode('overwrite')\
     .option('header',True)\
     .csv(outputLocation + 'Enriched\Vendor_USD_Enriched/Vendor_USD_Enriched'+ currentDaySuffix)
 
-print('Data loaded Successfully')
+print('Data loaded Successfully into file')
+
+# Write the data into MySQL database:
+
+usdEnrichedDF.write.mode('append')\
+    .format('jdbc')\
+    .options(
+    url = 'jdbc:mysql://localhost:3306/gkstorepipelinedb',
+    driver ='com.mysql.jdbc.Driver',
+    dbtable ='finaltable',
+    user ='root',
+    password = 'root'
+)\
+    .save()
+
+
+print('Data loaded Successfully into Database')
